@@ -5,126 +5,126 @@
 [![Google Cloud](https://img.shields.io/badge/Google_Cloud-Compute_Engine-4285F4)](https://cloud.google.com/compute)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-**A complete, beginner-friendly guide for running Hermes Agent with local Ollama models on Google Cloud VMs, accessible from Android phones via Termux.**
+**Run Hermes Agent with local Ollama models on Google Cloud VMs with a single command.**
 
 ---
 
-## Overview
+## Quick Start
 
-This project provides **step-by-step documentation** for Android users to:
-1. Set up a **Google Cloud VM** (free-tier eligible)
-2. Connect from **Android via Termux**
-3. Install **Hermes Agent** and **Ollama**
-4. Download and use **local Ollama models**
-5. Configure everything to work together
+The fastest way to get started:
 
-**Key Features:**
-- ✅ **No paid API costs** - Uses local models via Ollama
-- ✅ **Android-friendly** - Designed for Termux on phones
-- ✅ **Free-tier compatible** - Works within Google Cloud's free tier (with caveats)
-- ✅ **Temporary storage optimized** - Uses `/tmp` for models to avoid permanent clutter
-- ✅ **Beginner-focused** - Clear, copy-paste friendly commands
+### 1. Create a Google Cloud VM
+- Go to [Google Cloud Console](https://console.cloud.google.com)
+- Create a VM with **Ubuntu 22.04**, **e2-medium** (2 vCPU, 4GB RAM), 30GB disk
+- **Enable billing** (required for free tier)
+
+### 2. Open the VM Terminal
+- In Google Cloud Console, go to **Compute Engine** → **VM Instances**
+- Click **SSH** button next to your VM (opens browser-based terminal)
+
+### 3. Run the One-Command Installer
+
+```bash
+# Option 1: Clone repo and run (RECOMMENDED - safer)
+git clone https://github.com/yeasin-4745/ollama-cloud-setup.git
+cd ollama-cloud-setup
+bash install.sh
+```
+
+```bash
+# Option 2: Direct curl (review script first at the link below)
+curl -fsSL https://raw.githubusercontent.com/yeasin-4745/ollama-cloud-setup/main/install.sh | bash
+```
+
+> **⚠️ Security Note**: Always review scripts before piping to bash. View the script here: [install.sh](https://github.com/yeasin-4745/ollama-cloud-setup/blob/main/install.sh)
+
+### 4. Wait for Installation
+- The script will:
+  1. Check system requirements
+  2. Install dependencies
+  3. Install Ollama
+  4. Configure model storage in `/tmp`
+  5. Download `qwen2.5:1.5b` (lightweight model for 4GB RAM)
+  6. Start Ollama server
+  7. Install Hermes Agent
+  8. Configure Hermes to use local Ollama
+  9. Verify everything works
+
+### 5. Start Using Hermes
+
+```bash
+# Start chatting with Hermes
+hermes
+
+# Test Ollama API
+curl http://localhost:11434/v1/models
+
+# List downloaded models
+ollama list
+```
 
 ---
 
 ## Architecture
 
 ```
-Android Phone (Termux)
-        ↓ (SSH)
-Google Cloud VM (Ubuntu/Debian)
-        ↓ (Install)
-    Hermes Agent + Ollama
-        ↓ (Local Model)
-    Ollama Model (e.g., qwen2.5:1.5b in /tmp/ollama_models)
+Google Cloud VM
+    │
+    ├── Hermes Agent (AI agent framework)
+    │       ↓
+    └── Ollama (Local LLM inference server)
+            │
+            └── Local Ollama Model (e.g., qwen2.5:1.5b in /tmp/ollama_models)
 ```
 
-| **Component**       | **Location**          | **Purpose**                                                                 |
-|---------------------|-----------------------|-----------------------------------------------------------------------------|
-| Android Phone       | Local                 | Runs Termux for SSH access to the VM                                       |
-| Termux             | Android               | Terminal emulator with SSH client                                         |
-| Google Cloud VM    | Cloud                 | Hosts Hermes Agent and Ollama (Ubuntu 22.04 recommended)                  |
-| Hermes Agent       | VM (`~/.hermes`)      | AI agent framework that uses Ollama for inference                         |
-| Ollama             | VM (`~/.local/bin`)   | Local LLM inference server                                                  |
-| Ollama Models      | VM (`/tmp/ollama_models`) | Downloaded models (temporary storage)                                   |
+### Optional Android Workflow
+
+```
+Android Phone
+    │
+    └── Termux (OPTIONAL - for SSH access)
+            │
+            ↓ (SSH)
+    Google Cloud VM
+        │
+        ├── Hermes Agent
+        └── Ollama → Local Model
+```
+
+> **Note**: Termux is **OPTIONAL**. The primary method uses Google Cloud's built-in SSH terminal.
 
 ---
 
-## Quick Start
+## Detailed Setup
 
-For **Android users**, follow the complete guide:
-
-📖 **[Full Android Setup Guide](docs/ANDROID_GUIDE.md)**
-
-### TL;DR (For Quick Testing)
-
-1. **Create a Google Cloud VM** (e2-medium, 4GB RAM, Ubuntu 22.04)
-2. **Connect via Termux SSH**
-3. **Run the setup commands**:
-   ```bash
-   # Install dependencies
-   sudo apt update && sudo apt upgrade -y
-   sudo apt install -y zstd curl git python3 python3-pip
-   
-   # Install Ollama
-   curl -fsSL https://ollama.com/install.sh | sh
-   export PATH="$HOME/.local/bin:$PATH"
-   
-   # Configure model storage in /tmp
-   export OLLAMA_MODELS=/tmp/ollama_models
-   mkdir -p "$OLLAMA_MODELS"
-   
-   # Install Hermes Agent
-   curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
-   exec bash
-   
-   # Pull a lightweight model
-   ollama pull qwen2.5:1.5b
-   ollama serve &
-   
-   # Configure Hermes
-   hermes setup
-   # Select: Custom endpoint → http://127.0.0.1:11434/v1 → qwen2.5:1.5b
-   
-   # Start chatting
-   hermes
-   ```
-
----
-
-## Documentation
-
-| **Guide** | **Description** | **Audience** |
-|-----------|----------------|--------------|
-| **[Android Guide](docs/ANDROID_GUIDE.md)** | Complete setup for Android/Termux users | **Main guide** for this repo |
-| [Setup Guide](docs/SETUP_GUIDE.md) | Google Cloud Shell setup (legacy) | Cloud Shell users |
-| [Architecture](docs/ARCHITECTURE.md) | Storage limits and workflow | Advanced users |
-| [Troubleshooting](docs/TROUBLESHOOTING.md) | Common issues and fixes | All users |
+For users who want to understand each step, see:
+- **[Complete Android/Termux Guide](docs/ANDROID_GUIDE.md)** - Detailed instructions for Android users
+- **[Setup Guide](docs/SETUP_GUIDE.md)** - Manual setup steps
 
 ---
 
 ## Free Tier and Billing
 
-> **⚠️ CRITICAL: Google Cloud is NOT permanently free.**
+> **⚠️ IMPORTANT: Google Cloud is NOT permanently free.**
 
-### Free Tier Limits
+### Free Tier Limits (as of 2026)
 
 | **Resource** | **Free Tier** | **Notes** |
 |--------------|---------------|-----------|
-| Compute Engine | 1 x e2-micro/month | **Not enough for Ollama models** |
-| Compute Engine | e2-medium (4GB RAM) | ~$23/month if left running |
+| Compute Engine | 1 x e2-micro/month | **Not enough for Ollama** |
+| **e2-medium** | ~$0.0316/hour | **Recommended minimum** |
 | Persistent Disk | 30GB | Free tier covers this |
 | Outbound Network | 5GB/month | Model downloads count |
 
 ### Key Warnings
 - ⚠️ **e2-micro (1GB RAM) is NOT enough** for any Ollama model
-- ⚠️ **Minimum recommended**: e2-medium (2 vCPU, 4GB RAM) for `qwen2.5:1.5b`
-- ⚠️ **Stop your VM when not in use** to avoid charges
+- ⚠️ **Minimum**: e2-medium (2 vCPU, **4GB RAM**) for `qwen2.5:1.5b`
+- ⚠️ **Stop your VM when not in use** to avoid charges (~$23/month if left running 24/7)
 - ⚠️ **Monitor usage** in Google Cloud Console → Billing
 - ⚠️ **$300 free credits expire after 90 days**
 
 ### Cost Estimate
-- **e2-medium VM**: ~$0.0316/hour (~$23/month if running 24/7)
+- **e2-medium VM**: ~$0.0316/hour (~$23/month if running continuously)
 - **Model download**: ~1-2GB (counts against network egress)
 - **Storage**: 30GB persistent disk is free
 
@@ -132,126 +132,159 @@ For **Android users**, follow the complete guide:
 
 ---
 
-## Recommended Models
+## Temporary Storage Behavior
 
-For a **4GB RAM VM** (e2-medium):
+This setup uses `/tmp/ollama_models` for model storage to avoid permanent clutter.
 
-| **Model** | **Size** | **VRAM Required** | **Notes** |
-|-----------|----------|-------------------|-----------|
-| `qwen2.5:1.5b` | ~2.5GB | 4GB | **Recommended** - Good balance |
-| `llama3.2:1b` | ~1.5GB | 4GB | Fast, good for chat |
-| `gemma:2b` | ~2.5GB | 4GB | Google's model |
-| `phi3:3.8b` | ~2.5GB | 4GB | Microsoft's model |
+| **Action** | **/tmp Contents** | **Ollama Models** | **Hermes Config** | **Reinstall Needed?** |
+|------------|-------------------|-------------------|-------------------|----------------------|
+| **VM Reboot** | **Survives** | Survives | Survives | ❌ No |
+| **VM Stop/Start** | **Survives** | Survives | Survives | ❌ No |
+| **VM Deletion** | **Lost** | Lost | Lost | ✅ Yes |
+| **VM Recreation** | **Lost** | Lost | Lost | ✅ Yes |
+
+> **Note**: `/tmp` is on the persistent disk by default on Google Cloud VMs. However, some Linux distributions may clear `/tmp` on reboot. If models disappear, simply re-run `bash install.sh`.
+
+---
+
+## Customization
+
+### Change the Model
+
+The installer downloads `qwen2.5:1.5b` by default. To use a different model:
+
+```bash
+# Option 1: Set environment variable before running
+MODEL_NAME="llama3.2:1b" bash install.sh
+
+# Option 2: Set custom model storage location
+OLLAMA_MODELS="/tmp/my_custom_models" bash install.sh
+```
+
+### Recommended Models for 4GB RAM
+
+| **Model** | **Size** | **Notes** |
+|-----------|----------|-----------|
+| `qwen2.5:1.5b` | ~2.5GB | **Default - Good balance** |
+| `llama3.2:1b` | ~1.5GB | Fast, good for chat |
+| `gemma:2b` | ~2.5GB | Google's model |
+| `phi3:3.8b` | ~2.5GB | Microsoft's model |
 
 > **⚠️ WARNING**: Larger models (7B+) will **fail or be extremely slow** on 4GB RAM.
 
 ---
 
-## Storage Behavior
+## Uninstall
 
-### /tmp Persistence on Google Cloud VMs
+To remove everything:
 
-| **Action** | **/tmp Contents** | **Ollama Models** | **Hermes Config** | **Reinstall Needed?** |
-|------------|-------------------|-------------------|-------------------|----------------------|
-| VM Reboot | **Survives** | Survives | Survives | ❌ No |
-| VM Stop/Start | **Survives** | Survives | Survives | ❌ No |
-| VM Deletion | **Lost** | Lost | Lost | ✅ Yes |
-| VM Recreation | **Lost** | Lost | Lost | ✅ Yes |
+```bash
+# Clone repo if not already done
+git clone https://github.com/yeasin-4745/ollama-cloud-setup.git
+cd ollama-cloud-setup
 
-> **Note**: `/tmp` is on the persistent disk by default, but some Linux distributions may clear it on reboot. If models disappear, re-run `ollama pull qwen2.5:1.5b`.
+# Run uninstaller
+bash uninstall.sh
+```
+
+This will remove:
+- Ollama binary and all models
+- Hermes Agent and configuration
+- `/tmp/ollama_models` directory
+
+It will **NOT** remove:
+- System dependencies (curl, git, python3, etc.)
+- Your home directory or personal files
 
 ---
 
-## Directory Structure
+## Repository Structure
 
 ```
 ollama-cloud-setup/
-├── README.md               # This file - Overview and quick start
-├── docs/
-│   ├── ANDROID_GUIDE.md    # ✅ NEW: Complete Android/Termux guide
-│   ├── ARCHITECTURE.md     # Storage limits and workflow
-│   ├── SETUP_GUIDE.md      # Google Cloud Shell setup (legacy)
-│   └── TROUBLESHOOTING.md  # Common issues and fixes
-└── scripts/
-    ├── start.sh            # Start Ollama + pull model
-    └── cleanup.sh          # Clear cache to prevent ENOSPC
+├── README.md              # This file - Quick start and overview
+├── LICENSE                # MIT License
+├── install.sh             # One-command installer
+├── uninstall.sh           # Cleanup script
+└── docs/
+    ├── ANDROID_GUIDE.md   # Complete Android/Termux guide
+    ├── ARCHITECTURE.md    # Storage limits and workflow
+    ├── SETUP_GUIDE.md     # Manual setup steps
+    └── TROUBLESHOOTING.md  # Common issues and fixes
 ```
 
 ---
 
-## Scripts
+## Troubleshooting
 
-| **Script** | **Purpose** |
-|------------|-------------|
-| `scripts/start.sh` | Start Ollama, set `OLLAMA_MODELS=/tmp/ollama_models`, pull `qwen2.5:1.5b` |
-| `scripts/cleanup.sh` | Clear `~/.cache`, `~/.npm`, and `/tmp` (except models) |
+### Common Issues
 
----
+| **Issue** | **Solution** |
+|-----------|--------------|
+| `ENOSPC` (No space) | Run `bash uninstall.sh` and try again |
+| Ollama server not running | Run `ollama serve &` |
+| Model fails to load | Use a smaller model (e.g., `llama3.2:1b`) |
+| Hermes can't connect | Verify Ollama API: `curl http://localhost:11434/v1/models` |
+| SSH connection refused | Check VM is running and firewall allows SSH |
 
-## Prerequisites
+### Full Troubleshooting Guide
 
-- **Android Phone** with Termux (from [F-Droid](https://f-droid.org))
-- **Google Cloud Account** ([console.cloud.google.com](https://console.cloud.google.com))
-- **Billing enabled** (required for free tier)
-- **Basic Linux knowledge** (or willingness to copy-paste commands)
-
----
-
-## Common Issues?
-
-See **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** for fixes to:
-- `ENOSPC` (disk full) errors
-- Ollama server not running
-- Model fails to load (out of memory)
-- Hermes can't connect to Ollama
-- Context window too small
-- SSH connection issues
+See **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** for detailed fixes.
 
 ---
 
 ## Security Notes
 
-1. **⚠️ SSH Keys**: Never share your private key (`~/.ssh/id_ed25519`)
-2. **⚠️ VM Exposure**: Your VM's IP is public. Restrict SSH access in firewall rules
-3. **⚠️ Root Access**: Disable root SSH login for better security
-4. **⚠️ Hermes Gateway**: If using messaging (Telegram/Discord), be aware of privacy implications
+1. **⚠️ Script Review**: Always review scripts before running them with `curl | bash`
+2. **⚠️ SSH Keys**: Never share your private key
+3. **⚠️ VM Exposure**: Your VM's IP is public. Restrict SSH access in firewall rules
+4. **⚠️ Root Access**: Avoid running as root. Use a non-root user
+5. **⚠️ Ollama API**: By default, Ollama only listens on `localhost`. Do NOT expose port 11434 publicly without authentication
 
 ---
 
 ## Quick Reference Commands
 
 ```bash
-# Connect to VM from Termux
-ssh your-username@EXTERNAL_IP
-
-# Start Ollama and pull model
-ollama serve & && ollama pull qwen2.5:1.5b
-
-# Configure Hermes
-hermes setup  # Select: Custom endpoint → http://127.0.0.1:11434/v1
+# Install everything
+bash install.sh
 
 # Start Hermes chat
 hermes
 
-# Check Ollama status
+# Test Ollama API
 curl http://localhost:11434/v1/models
 
-# Clean up disk space
-rm -rf ~/.cache/*
-find /tmp -mindepth 1 -maxdepth 1 ! -name "ollama_models" -exec rm -rf {} + 2>/dev/null || true
+# List models
+ollama list
+
+# Pull a different model
+ollama pull llama3.2:1b
+
+# Stop Ollama
+pkill ollama
+
+# Restart Ollama
+ollama serve &
+
+# Reinstall after VM restart
+bash install.sh
+
+# Clean up
+bash uninstall.sh
 ```
 
 ---
 
 ## Next Steps
 
-1. **[Read the Full Android Guide](docs/ANDROID_GUIDE.md)** for detailed instructions
-2. Try different models (`llama3.2:1b`, `gemma:2b`)
-3. Set up Hermes Gateway for Telegram/Discord:
+1. **Try different models** (`llama3.2:1b`, `gemma:2b`, `phi3:3.8b`)
+2. **Set up Hermes Gateway** for Telegram/Discord:
    ```bash
    hermes gateway setup
    ```
-4. Experiment with agentic tasks (file analysis, automation)
+3. **Experiment with agentic tasks** (file analysis, automation)
+4. **Monitor your Google Cloud usage** to avoid unexpected charges
 
 ---
 
@@ -267,4 +300,4 @@ Found an issue or have improvements? Open a PR or issue on GitHub.
 
 ---
 
-*Last updated: September 2026 | Guide version: 2.0*
+*Last updated: September 2026 | Version: 3.0*
