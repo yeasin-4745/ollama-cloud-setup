@@ -408,17 +408,22 @@ verify_ollama() {
 # =============================================================================
 
 install_hermes() {
-    log_info "Installing Hermes Agent..."
+    log_info "Installing Hermes Agent using official installer..."
     
     if check_command hermes; then
         log_info "Hermes Agent is already installed."
         return 0
     fi
     
-    # Download and install Hermes Agent
+    # Download and run the official Hermes installer
+    # Do NOT redirect output to /dev/null - preserve live progress
+    log_info "Running official Hermes installer (this may take a few minutes)..."
     if ! curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash; then
-        log_error "Failed to install Hermes Agent. Check your internet connection."
-        exit 1
+        HERMES_EXIT_CODE=$?
+        log_error "Hermes Agent installation failed with exit code: $HERMES_EXIT_CODE"
+        log_error "Please check your internet connection and try again."
+        log_error "If the problem persists, install manually from: https://github.com/NousResearch/hermes-agent"
+        exit $HERMES_EXIT_CODE
     fi
     
     # Reload shell to pick up new PATH
@@ -428,7 +433,15 @@ install_hermes() {
     
     # Verify installation
     if ! check_command hermes; then
-        log_error "Hermes Agent installation failed. Please install manually from https://github.com/NousResearch/hermes-agent"
+        log_error "Hermes Agent installation failed. The 'hermes' command is not available."
+        log_error "Please install manually from: https://github.com/NousResearch/hermes-agent"
+        exit 1
+    fi
+    
+    # Verify Hermes works
+    log_info "Verifying Hermes installation..."
+    if ! hermes --version &> /dev/null; then
+        log_error "Hermes Agent is installed but not working properly."
         exit 1
     fi
     
@@ -445,123 +458,30 @@ configure_hermes() {
     local model="${MODEL_NAME:-$DEFAULT_MODEL}"
     local endpoint="http://127.0.0.1:11434/v1"
     
-    # Check if Hermes is already configured with Ollama
-    if hermes config get provider 2>/dev/null | grep -q "custom"; then
-        log_info "Hermes appears to be already configured with a custom endpoint."
+    # Check if Hermes is already configured with our Ollama endpoint
+    if hermes config get provider 2>/dev/null | grep -q "custom" && \
+       hermes config get provider.custom.base_url 2>/dev/null | grep -q "127.0.0.1:11434"; then
+        log_info "Hermes is already configured with local Ollama endpoint."
         return 0
     fi
     
-    # Use Hermes setup wizard non-interactively
-    # We'll use expect or a series of echo commands to automate the setup
-    log_info "Configuring Hermes with custom Ollama endpoint..."
+    log_info "Configuring Hermes with local Ollama endpoint: $endpoint"
     
-    # Create a temporary config file for non-interactive setup
-    cat > /tmp/hermes_setup_expect << 'EOF'
-spawn hermes setup
-
-# Wait for setup to start
-expect {
-    "How would you like to set up Hermes?" {
-        send "1\r"
-    }
-    timeout 10
-}
-
-# Select provider
-expect {
-    "Select a provider" {
-        send "\r"
-    }
-    "More providers" {
-        send "\r"
-    }
-    timeout 10
-}
-
-# Select custom endpoint
-expect {
-    "Custom endpoint" {
-        send "\r"
-    }
-    timeout 5
-}
-
-# Enter API base URL
-expect {
-    "API base URL" {
-        send "http://127.0.0.1:11434/v1\r"
-    }
-    timeout 5
-}
-
-# API key (leave blank)
-expect {
-    "API key" {
-        send "\r"
-    }
-    timeout 5
-}
-
-# Model selection
-expect {
-    "Use this model?" {
-        send "Y\r"
-    }
-    timeout 5
-}
-
-# Context length (leave blank for auto-detect)
-expect {
-    "Context length" {
-        send "\r"
-    }
-    timeout 5
-}
-
-# Messaging setup (skip)
-expect {
-    "Connect a messaging platform?" {
-        send "2\r"
-    }
-    timeout 5
-}
-
-# Launch (no)
-expect {
-    "Launch hermes chat now?" {
-        send "n\r"
-    }
-    timeout 5
-}
-
-exit 0
-EOF
-    
-    # Try using expect if available
-    if check_command expect; then
-        if expect -f /tmp/hermes_setup_expect 2>/dev/null; then
-            log_success "Hermes configured successfully with Ollama endpoint."
-            rm -f /tmp/hermes_setup_expect
-            return 0
-        fi
-    fi
-    
-    # Fallback: Manual configuration using hermes config commands
-    log_info "Using manual configuration (expect not available)..."
-    
+    # Use hermes config commands for non-interactive setup
     # Set the provider to custom
     if hermes config set provider "custom" 2>/dev/null; then
         log_info "Set provider to custom"
+    else
+        log_error "Failed to set Hermes provider to custom."
+        exit 1
     fi
     
     # Set the API base URL
     if hermes config set provider.custom.base_url "$endpoint" 2>/dev/null; then
         log_info "Set custom endpoint: $endpoint"
-    fi
-    
-    # Set the model
-    if hermes config set model "$model" 2>/dev/null; then
-        log_info "Set default model: $model"
+    else
+        log_error "Failed to set Hermes custom endpoint."
+        exit 1
     fi
     
     # Clear API key (not needed for local Ollama)
@@ -569,8 +489,15 @@ EOF
         log_info "Cleared API key (not needed for local Ollama)"
     fi
     
-    log_success "Hermes configuration completed."
-    rm -f /tmp/hermes_setup_expect
+    # Set the model
+    if hermes config set model "$model" 2>/dev/null; then
+        log_info "Set default model: $model"
+    else
+        log_error "Failed to set default model."
+        exit 1
+    fi
+    
+    log_success "Hermes configured successfully with local Ollama."
 }
 
 # =============================================================================
