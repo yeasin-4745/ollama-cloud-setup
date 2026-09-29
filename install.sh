@@ -233,6 +233,36 @@ install_ollama() {
 }
 
 # =============================================================================
+# Cleanup Previous Installation
+# =============================================================================
+
+cleanup_previous() {
+    log_info "Cleaning up previous installation..."
+    
+    # Kill any existing Ollama process from this setup
+    if pgrep -f "ollama serve" &> /dev/null; then
+        log_info "Stopping existing Ollama process..."
+        pkill -f "ollama serve" || true
+        sleep 2
+    fi
+    
+    # Remove previous model directory
+    MODELS_DIR="${OLLAMA_MODELS:-$DEFAULT_OLLAMA_MODELS}"
+    if [ -d "$MODELS_DIR" ]; then
+        rm -rf "$MODELS_DIR"
+        log_info "Removed previous model directory: $MODELS_DIR"
+    fi
+    
+    # Remove previous Ollama log
+    if [ -f "/tmp/ollama.log" ]; then
+        rm -f "/tmp/ollama.log"
+        log_info "Removed previous Ollama log"
+    fi
+    
+    log_success "Previous installation cleaned up."
+}
+
+# =============================================================================
 # Ollama Configuration
 # =============================================================================
 
@@ -291,6 +321,7 @@ download_model() {
     fi
     
     # Download the model
+    log_info "Downloading $model (this may take 5-20 minutes)..."
     if ! ollama pull "$model"; then
         log_error "Failed to download model: $model"
         exit 1
@@ -308,29 +339,36 @@ start_ollama() {
     
     # Kill any existing Ollama process
     if pgrep -f "ollama serve" &> /dev/null; then
-        log_info "Found existing Ollama process. Restarting..."
+        log_info "Stopping existing Ollama process..."
         pkill -f "ollama serve" || true
         sleep 2
     fi
     
-    # Start Ollama in background
-    ollama serve &
+    # Start Ollama with nohup and save PID
+    log_info "Starting Ollama server with nohup..."
+    nohup ollama serve > /tmp/ollama.log 2>&1 &
+    OLLAMA_PID=$!
+    log_info "Ollama server started with PID: $OLLAMA_PID"
     
     # Wait for server to start
-    log_info "Waiting for Ollama server to start..."
+    log_info "Waiting for Ollama server to respond on 127.0.0.1:11434..."
     MAX_ATTEMPTS=30
     ATTEMPT=1
     
     while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
-        if curl -s http://localhost:11434/v1/models &> /dev/null; then
-            log_success "Ollama server is running on http://localhost:11434"
+        if curl -s http://127.0.0.1:11434/v1/models &> /dev/null; then
+            log_success "Ollama server is running on http://127.0.0.1:11434"
             return 0
         fi
         sleep 2
         ATTEMPT=$((ATTEMPT + 1))
     done
     
+    # Server failed to start - show log and exit
     log_error "Ollama server failed to start within ${MAX_ATTEMPTS} seconds."
+    log_error "Check /tmp/ollama.log for details:"
+    echo ""
+    cat /tmp/ollama.log
     exit 1
 }
 
@@ -632,9 +670,10 @@ main() {
     check_system
     install_dependencies
     install_ollama
+    cleanup_previous
     configure_ollama
-    download_model
     start_ollama
+    download_model
     verify_ollama
     install_hermes
     configure_hermes
